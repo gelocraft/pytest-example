@@ -1,0 +1,41 @@
+---
+name: Pytest
+
+on:  # yamllint disable-line rule:truthy
+  pull_request:
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install poetry
+        run: pipx install poetry
+
+      - name: Install project dependencies
+        run: |
+          poetry install --no-root
+          poetry add --group dev pytest pytest-cov
+
+      - name: Activate virtual environment
+        run: poetry env activate
+
+      - name: Create .coveragerc file
+        run: |
+          touch .coveragerc
+          echo "[run]" >>.coveragerc
+          echo "omit =" >>.coveragerc
+          echo "  tests/*" >>.coveragerc
+          echo "  test_*.py" >>.coveragerc
+          echo "  */site-packages/*" >>.coveragerc
+
+      - name: Generate coverage.json file
+        run: |
+          poetry run pytest --cov --cov-report=json:coverage.json
+
+      - name: Update coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage.json
+          path: coverage.json
